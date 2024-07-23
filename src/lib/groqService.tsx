@@ -6,37 +6,39 @@ async function getGroqChatCompletion(content: string): Promise<string> {
   const chatCompletion = await groq.chat.completions.create({
     messages: [
       {
-        role: "user",
+        role: "system",
         content,
       },
     ],
-    model: "llama3-8b-8192",
+    model: "llama-3.1-70b-versatile",
   });
   return chatCompletion.choices[0]?.message?.content ?? "";
 }
 
-async function generateDescription(
-  value: string,
-  type: string
-): Promise<string> {
-  const prompt = `Generate a brief description for the following ${type}: ${value} without any unnecessary prefixes or text but still informative and important.`;
-  return getGroqChatCompletion(prompt);
-}
+// async function generateDescription(
+//   value: string,
+//   type: string
+// ): Promise<string> {
+//   const prompt = `Generate a brief description for the following ${type}: ${value} without any unnecessary prefixes or text but still informative and important.`;
+//   return getGroqChatCompletion(prompt);
+// }
 
 async function extractInfoFromTextWithGroq(text: string): Promise<{
-  dates: { date: string; description: string }[];
-  monetary_values: { amount: string; description: string }[];
-  citation: {
-    law_title: string;
-    law_number: string;
-    description: string;
+  dates: { 
+    date: string; 
+    // description: string 
+  }[];
+  
+  monetary_values: { 
+    amount: string; 
+    // description: string 
   }[];
 }> {
   const extractionPrompt = `
   You are an AI assistant specialized in extracting specific information from Indonesian legal and financial documents. Analyze the following text and extract:
 
-  1. Dates: Look for dates in the format (DD MM YYYY) ONLY. Explain the context of each date according to the document.
-  2. Monetary values: Find monetary amounts, especially in Indonesian Rupiah (IDR). Include amounts written in words. Explain the context of each amount according to the document.
+  1. Dates: Look for full dates like (day)+(month)+(year) ONLY.
+  2. Monetary values: Find monetary amounts, especially in Indonesian Rupiah (IDR/Rp). Include amounts written in words.
   3. Citations: Identify any references to laws, regulations, or decrees. Include the title and number. You can find this reference in "Mengingat" sections.
 
   Be thorough and extract all instances you can find.
@@ -58,18 +60,19 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
 `;
 
   console.log("Sending extraction prompt to Groq API");
-  console.log("First 500 characters of text:", text.substring(0, 500));
   const groqResponse = await getGroqChatCompletion(extractionPrompt);
   console.log("Received response from Groq API");
   console.log("Groq response:", groqResponse);
 
   // Parse the text response
-  const dates: { date: string; description: string }[] = [];
-  const monetary_values: { amount: string; description: string }[] = [];
-  const citation: {
-    law_title: string;
-    law_number: string;
-    description: string;
+  const dates: { 
+    date: string; 
+    // description: string 
+  }[] = [];
+  
+  const monetary_values: { 
+    amount: string; 
+    // description: string 
   }[] = [];
 
   const lines = groqResponse.split("\n");
@@ -89,69 +92,51 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
         case "dates":
           dates.push({
             date: content,
-            description: await generateDescription(content, "date"),
+            // description: await generateDescription(content, "date"),
           });
           break;
         case "monetary_values":
           monetary_values.push({
             amount: content,
-            description: await generateDescription(content, "monetary value"),
+            // description: await generateDescription(content, "monetary value"),
           });
-          break;
-        case "citation":
-          const citationRegex = /(.+?):\s*(.+)/;
-          const citationMatch = citationRegex.exec(content);
-          if (citationMatch) {
-            const fullTitle = citationMatch[1].trim();
-            const details = citationMatch[2].trim();
-
-            const lawNumberMatch = /Nomor\s+(\d+)/i.exec(fullTitle);
-            const lawNumber = lawNumberMatch ? lawNumberMatch[1] : "";
-
-            const lawTitle = fullTitle.replace(/Nomor\s+\d+.*$/i, "").trim();
-
-            citation.push({
-              law_title: lawTitle,
-              law_number: lawNumber,
-              description: await generateDescription(
-                `${fullTitle}: ${details}`,
-                "law"
-              ),
-            });
-          }
           break;
       }
     }
   }
 
   console.log(
-    `Extracted: ${dates.length} dates, ${monetary_values.length} monetary values, ${citation.length} citations`
+    `Extracted: ${dates.length} dates, ${monetary_values.length} monetary values`
   );
 
-  return { dates, monetary_values, citation };
+  return { dates, monetary_values};
 }
 
 export async function extractAndGenerateInsights(docTexts: {
   [key: string]: string;
 }): Promise<{
   [key: string]: {
-    dates: { date: string; description: string }[];
-    monetary_values: { amount: string; description: string }[];
-    citation: {
-      law_title: string;
-      law_number: string;
-      description: string;
+    dates: { 
+      date: string; 
+      // description: string 
+    }[];
+    
+    monetary_values: { 
+      amount: string; 
+      // description: string 
     }[];
   };
 }> {
   const extractedData: {
     [key: string]: {
-      dates: { date: string; description: string }[];
-      monetary_values: { amount: string; description: string }[];
-      citation: {
-        law_title: string;
-        law_number: string;
-        description: string;
+      dates: { 
+        date: string; 
+        // description: string 
+      }[];
+      
+      monetary_values: { 
+        amount: string; 
+        // description: string 
       }[];
     };
   } = {};
@@ -169,7 +154,6 @@ export async function extractAndGenerateInsights(docTexts: {
       extractedData[filename] = {
         dates: [],
         monetary_values: [],
-        citation: [],
       };
     }
   }
