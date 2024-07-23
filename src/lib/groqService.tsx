@@ -19,7 +19,7 @@ async function generateDescription(
   value: string,
   type: string
 ): Promise<string> {
-  const prompt = `Generate a brief description for the following ${type}: ${value}`;
+  const prompt = `Generate a brief description for the following ${type}: ${value} without any unnecessary prefixes or text but still informative and important.`;
   return getGroqChatCompletion(prompt);
 }
 
@@ -47,11 +47,12 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
 
   Format your response as follows:
   Dates:
-  -[extracted date] - [context explanation]
+  - [extracted date] - [context explanation]
   Monetary values:
   - [extracted amount] - [context explanation]
   Citations:
-  - Law Title: [extracted title], Law Number: [extracted number]
+  - [extracted title]
+  - [extracted number]
 
   If no information is found for a category, simply state "No information found" for that category and do the same for the description.
 `;
@@ -98,17 +99,22 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
           });
           break;
         case "citation":
-          const lawMatch = content.match(
-            /Law Title:\s*(.+?),\s*Law Number:\s*(.+)/i
-          );
-          if (lawMatch) {
-            const lawTitle = lawMatch[1].trim();
-            const lawNumber = lawMatch[2].trim();
+          const citationRegex = /(.+?):\s*(.+)/;
+          const citationMatch = citationRegex.exec(content);
+          if (citationMatch) {
+            const fullTitle = citationMatch[1].trim();
+            const details = citationMatch[2].trim();
+
+            const lawNumberMatch = /Nomor\s+(\d+)/i.exec(fullTitle);
+            const lawNumber = lawNumberMatch ? lawNumberMatch[1] : "";
+
+            const lawTitle = fullTitle.replace(/Nomor\s+\d+.*$/i, "").trim();
+
             citation.push({
               law_title: lawTitle,
               law_number: lawNumber,
               description: await generateDescription(
-                `${lawTitle} (${lawNumber})`,
+                `${fullTitle}: ${details}`,
                 "law"
               ),
             });
