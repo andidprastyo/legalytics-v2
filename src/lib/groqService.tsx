@@ -15,14 +15,15 @@ async function getGroqChatCompletion(content: string): Promise<string> {
   return chatCompletion.choices[0]?.message?.content ?? "";
 }
 
-async function generateDescription(value: string, type: string): Promise<string> {
+async function generateDescription(
+  value: string,
+  type: string
+): Promise<string> {
   const prompt = `Generate a brief description for the following ${type}: ${value}`;
   return getGroqChatCompletion(prompt);
 }
 
-async function extractInfoFromTextWithGroq(
-  text: string
-): Promise<{
+async function extractInfoFromTextWithGroq(text: string): Promise<{
   dates: { date: string; description: string }[];
   monetary_values: { amount: string; description: string }[];
   citation: {
@@ -32,32 +33,28 @@ async function extractInfoFromTextWithGroq(
   }[];
 }> {
   const extractionPrompt = `
-    You are an AI assistant specialized in extracting specific information from Indonesian legal and financial documents. Analyze the following text and extract:
+  You are an AI assistant specialized in extracting specific information from Indonesian legal and financial documents. Analyze the following text and extract:
 
-    1. Dates: Look for any dates in any format (e.g., DD/MM/YYYY, DD Month YYYY, etc.).
-    2. Monetary values: Find any monetary amounts, especially in Indonesian Rupiah (IDR). Include amounts written in words.
-    3. Citations: Identify any references to laws, regulations, or decrees. Include the title and number.
+  1. Dates: Look for dates in the format (DD MM YYYY) ONLY. Explain the context of each date according to the document.
+  2. Monetary values: Find monetary amounts, especially in Indonesian Rupiah (IDR). Include amounts written in words. Explain the context of each amount according to the document.
+  3. Citations: Identify any references to laws, regulations, or decrees. Include the title and number. You can find this reference in "Mengingat" sections.
 
-    Be thorough and extract all instances you can find. If you're unsure about something, include it and note your uncertainty.
+  Be thorough and extract all instances you can find.
+  Provide the information directly without any prefixes or unnecessary text.
 
-    Examples:
-    - Date: 1 Januari 2024
-    - Monetary value: Rp1.000.000 (satu juta rupiah)
-    - Citation: Peraturan Menteri Keuangan Nomor 46/PMK.01/2024
+  Text to analyze:
+  ${text}
 
-    Text to analyze:
-    ${text}
+  Format your response as follows:
+  Dates:
+  -[extracted date] - [context explanation]
+  Monetary values:
+  - [extracted amount] - [context explanation]
+  Citations:
+  - Law Title: [extracted title], Law Number: [extracted number]
 
-    Format your response as follows:
-    Dates:
-    - [extracted date]
-    Monetary values:
-    - [extracted amount]
-    Citations:
-    - Law Title: [extracted title], Law Number: [extracted number]
-
-    If no information is found for a category, state "No information found" for that category.
-  `;
+  If no information is found for a category, simply state "No information found" for that category and do the same for the description.
+`;
 
   console.log("Sending extraction prompt to Groq API");
   console.log("First 500 characters of text:", text.substring(0, 500));
@@ -91,24 +88,29 @@ async function extractInfoFromTextWithGroq(
         case "dates":
           dates.push({
             date: content,
-            description: await generateDescription(content, 'date')
+            description: await generateDescription(content, "date"),
           });
           break;
         case "monetary_values":
           monetary_values.push({
             amount: content,
-            description: await generateDescription(content, 'monetary value')
+            description: await generateDescription(content, "monetary value"),
           });
           break;
         case "citation":
-          const lawMatch = content.match(/Law Title:\s*(.+?),\s*Law Number:\s*(.+)/i);
+          const lawMatch = content.match(
+            /Law Title:\s*(.+?),\s*Law Number:\s*(.+)/i
+          );
           if (lawMatch) {
             const lawTitle = lawMatch[1].trim();
             const lawNumber = lawMatch[2].trim();
             citation.push({
               law_title: lawTitle,
               law_number: lawNumber,
-              description: await generateDescription(`${lawTitle} (${lawNumber})`, 'law')
+              description: await generateDescription(
+                `${lawTitle} (${lawNumber})`,
+                "law"
+              ),
             });
           }
           break;
