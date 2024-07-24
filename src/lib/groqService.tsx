@@ -10,7 +10,7 @@ async function getGroqChatCompletion(content: string): Promise<string> {
         content,
       },
     ],
-    model: "llama3-70b-8192",
+    model: "llama-3.1-70b-versatile",
   });
   return chatCompletion.choices[0]?.message?.content ?? "";
 }
@@ -24,6 +24,8 @@ async function generateDescription(
   You can use the [context explanation] provided in the extraction response for additional information.
   Be concise and provide a clear and informative description, focusing on the extracted ${value}.
   Use Bahasa Indonesia and ensure the description is relevant to the context.
+
+  If ${value} is 'No information found', simply state "No information found" for the description.
   `;
   return getGroqChatCompletion(prompt);
 }
@@ -38,12 +40,18 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
     amount: string; 
     description: string 
   }[];
+
+  citations: {
+    law_title: string;
+    description: string;
+  }[];
 }> {
   const extractionPrompt = `
   You are an AI assistant specialized in extracting specific information from Indonesian legal and financial documents. Analyze the following text and extract:
 
-  1. Dates: Look for full dates like (day)+(month)+(year) ONLY.
+  1. Dates: Include only this date format:(day)+(month)+(year), exclude any singular year.
   2. Monetary values: Find monetary amounts, especially in Indonesian Rupiah (IDR/Rp). Include amounts written in words.
+  3. Citation references: Extract any references to laws, regulations, or legal documents. You can find this in "mengingat" sections.
 
   Be thorough and extract all instances you can find, use Bahasa Indonesia for the [context explanation].
   Provide the information directly without any prefixes or unnecessary text.
@@ -56,6 +64,8 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
   - [extracted date] - [context explanation]
   Monetary values:
   - [extracted amount] - [context explanation]
+  Citations:
+  - [extracted citation] - [context explanation]
 
   If no information is found for a category, simply state "No information found" for that category and do the same for the description.
 `;
@@ -74,6 +84,11 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
   const monetary_values: { 
     amount: string; 
     description: string 
+  }[] = [];
+
+  const citations: {
+    law_title: string;
+    description: string;
   }[] = [];
 
   const lines = groqResponse.split("\n");
@@ -107,10 +122,10 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
   }
 
   console.log(
-    `Extracted: ${dates.length} dates, ${monetary_values.length} monetary values`
+    `Extracted: ${dates.length} dates, ${monetary_values.length} monetary values, ${citations.length} citations`
   );
 
-  return { dates, monetary_values};
+  return { dates, monetary_values, citations };
 }
 
 export async function extractAndGenerateInsights(docTexts: {
@@ -126,6 +141,11 @@ export async function extractAndGenerateInsights(docTexts: {
       amount: string; 
       description: string 
     }[];
+
+    citations: {
+      law_title: string;
+      description: string;
+    }[];
   };
 }> {
   const extractedData: {
@@ -138,6 +158,11 @@ export async function extractAndGenerateInsights(docTexts: {
       monetary_values: { 
         amount: string; 
         description: string 
+      }[];
+
+      citations: {
+        law_title: string;
+        description: string;
       }[];
     };
   } = {};
@@ -155,6 +180,7 @@ export async function extractAndGenerateInsights(docTexts: {
       extractedData[filename] = {
         dates: [],
         monetary_values: [],
+        citations: [],
       };
     }
   }
