@@ -10,28 +10,33 @@ async function getGroqChatCompletion(content: string): Promise<string> {
         content,
       },
     ],
-    model: "llama-3.1-70b-versatile",
+    model: "llama3-70b-8192",
   });
   return chatCompletion.choices[0]?.message?.content ?? "";
 }
 
-// async function generateDescription(
-//   value: string,
-//   type: string
-// ): Promise<string> {
-//   const prompt = `Generate a brief description for the following ${type}: ${value} without any unnecessary prefixes or text but still informative and important.`;
-//   return getGroqChatCompletion(prompt);
-// }
+async function generateDescription(
+  value: string,
+  type: string
+): Promise<string> {
+  const prompt = `
+  Generate a description for the following ${type}: ${value}
+  You can use the [context explanation] provided in the extraction response for additional information.
+  Be concise and provide a clear and informative description, focusing on the extracted ${value}.
+  Use Bahasa Indonesia and ensure the description is relevant to the context.
+  `;
+  return getGroqChatCompletion(prompt);
+}
 
 async function extractInfoFromTextWithGroq(text: string): Promise<{
   dates: { 
     date: string; 
-    // description: string 
+    description: string 
   }[];
   
   monetary_values: { 
     amount: string; 
-    // description: string 
+    description: string 
   }[];
 }> {
   const extractionPrompt = `
@@ -39,9 +44,8 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
 
   1. Dates: Look for full dates like (day)+(month)+(year) ONLY.
   2. Monetary values: Find monetary amounts, especially in Indonesian Rupiah (IDR/Rp). Include amounts written in words.
-  3. Citations: Identify any references to laws, regulations, or decrees. Include the title and number. You can find this reference in "Mengingat" sections.
 
-  Be thorough and extract all instances you can find.
+  Be thorough and extract all instances you can find, use Bahasa Indonesia for the [context explanation].
   Provide the information directly without any prefixes or unnecessary text.
 
   Text to analyze:
@@ -52,9 +56,6 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
   - [extracted date] - [context explanation]
   Monetary values:
   - [extracted amount] - [context explanation]
-  Citations:
-  - [extracted title]
-  - [extracted number]
 
   If no information is found for a category, simply state "No information found" for that category and do the same for the description.
 `;
@@ -67,12 +68,12 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
   // Parse the text response
   const dates: { 
     date: string; 
-    // description: string 
+    description: string 
   }[] = [];
   
   const monetary_values: { 
     amount: string; 
-    // description: string 
+    description: string 
   }[] = [];
 
   const lines = groqResponse.split("\n");
@@ -92,13 +93,13 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
         case "dates":
           dates.push({
             date: content,
-            // description: await generateDescription(content, "date"),
+            description: await generateDescription(content, "date"),
           });
           break;
         case "monetary_values":
           monetary_values.push({
             amount: content,
-            // description: await generateDescription(content, "monetary value"),
+            description: await generateDescription(content, "monetary value"),
           });
           break;
       }
@@ -118,12 +119,12 @@ export async function extractAndGenerateInsights(docTexts: {
   [key: string]: {
     dates: { 
       date: string; 
-      // description: string 
+      description: string 
     }[];
     
     monetary_values: { 
       amount: string; 
-      // description: string 
+      description: string 
     }[];
   };
 }> {
@@ -131,12 +132,12 @@ export async function extractAndGenerateInsights(docTexts: {
     [key: string]: {
       dates: { 
         date: string; 
-        // description: string 
+        description: string 
       }[];
       
       monetary_values: { 
         amount: string; 
-        // description: string 
+        description: string 
       }[];
     };
   } = {};
