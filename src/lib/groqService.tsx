@@ -49,7 +49,7 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
   const extractionPrompt = `
   You are an AI assistant specialized in extracting specific information from Indonesian legal and financial documents. Analyze the following text and extract:
 
-  1. Dates: Include only this date format:(day)+(month)+(year), exclude any singular year.
+  1. Dates: Include only this date format:[day] [month] [year], if you find a singular year on the document, ignore it.
   2. Monetary values: Find monetary amounts, especially in Indonesian Rupiah (IDR/Rp). Include amounts written in words.
   3. Citation references: Extract any references to laws, regulations, or legal documents. You can find this in "mengingat" sections.
 
@@ -106,16 +106,28 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
       const content = line.trim().substring(1).trim();
       switch (currentSection) {
         case "dates":
-          dates.push({
-            date: content,
-            description: await generateDescription(content, "date"),
-          });
+          const dateMatch = RegExp(/(\d{1,2}\s\w+\s\d{4})/).exec(content);
+          if (dateMatch) {
+            dates.push({
+              date: dateMatch[1],
+              description: await generateDescription(content, "date"),
+            });
+          }
           break;
         case "monetary_values":
           monetary_values.push({
             amount: content,
             description: await generateDescription(content, "monetary value"),
           });
+          break;
+        case "citation":
+          const lawTitleMatch = RegExp(/^(.+?\s\d{4})/).exec(content);
+          if(lawTitleMatch) {
+            citations.push({
+              law_title: lawTitleMatch[1],
+              description: await generateDescription(content, "citation"),
+            });
+          }
           break;
       }
     }
