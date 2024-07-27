@@ -1,0 +1,133 @@
+.container {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 2rem;
+	background-color: #f8fafc;
+	min-height: 100vh;
+  }
+  
+  .title {
+	font-size: 2.5rem;
+	font-weight: bold;
+	text-align: center;
+	color: #2563eb;
+	margin-bottom: 2rem;
+  }
+  
+  .tabContainer {
+	display: flex;
+	justify-content: center;
+	margin-bottom: 2rem;
+	flex-wrap: wrap;
+  }
+  
+  .tabButton {
+	background-color: #e2e8f0;
+	border: none;
+	padding: 0.75rem 1.5rem;
+	margin: 0.5rem;
+	border-radius: 0.5rem;
+	font-size: 1rem;
+	font-weight: 600;
+	color: #4b5563;
+	cursor: pointer;
+	transition: all 0.3s ease;
+  }
+  
+  .tabButton:hover {
+	background-color: #cbd5e1;
+  }
+  
+  .activeTab {
+	background-color: #2563eb;
+	color: white;
+  }
+  
+  .card {
+	background-color: white;
+	border-radius: 1rem;
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	padding: 2rem;
+	margin-bottom: 2rem;
+  }
+  
+  .cardTitle {
+	font-size: 1.8rem;
+	font-weight: 600;
+	color: #1e40af;
+	margin-bottom: 1.5rem;
+	border-bottom: 2px solid #e2e8f0;
+	padding-bottom: 0.5rem;
+  }
+  
+  .section {
+	margin-bottom: 2rem;
+  }
+  
+  .sectionTitle {
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: #4b5563;
+	margin-bottom: 1rem;
+  }
+  
+  .tableWrapper {
+	overflow-x: auto;
+  }
+  
+  .table {
+	width: 100%;
+	border-collapse: separate;
+	border-spacing: 0;
+  }
+  
+  .tableHeader {
+	background-color: #f1f5f9;
+	color: #4b5563;
+	font-weight: 600;
+	text-align: left;
+	padding: 1rem;
+	border-bottom: 2px solid #e2e8f0;
+  }
+  
+  .tableRow {
+	transition: background-color 0.3s ease;
+  }
+  
+  .tableRow:hover {
+	background-color: #f1f5f9;
+  }
+  
+  .tableCell {
+	padding: 1rem;
+	border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .noDataMessage {
+	text-align: center;
+	color: #6b7280;
+	font-style: italic;
+  }
+  
+  .loadingSpinner {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+	font-size: 1.5rem;
+	color: #2563eb;
+  }
+  
+  .error {
+	text-align: center;
+	color: #dc2626;
+	font-size: 1.2rem;
+	margin-top: 2rem;
+  }
+  
+  .noData {
+	text-align: center;
+	color: #6b7280;
+	font-size: 1.2rem;
+	margin-top: 2rem;
+  }
