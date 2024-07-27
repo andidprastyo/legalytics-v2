@@ -139,3 +139,13 @@
   font-family: 'Inter', sans-serif;
   margin-top: 2rem;
 }
+
+.wordcloudWrapper {
+  width: 100%;
+  height: 400px;  /* Adjust this value as needed */
+}
+
+.wordcloudContainer {
+  width: 100%;
+  height: 100%;
+}
