@@ -10,7 +10,7 @@ async function getGroqChatCompletion(content: string): Promise<string> {
         content,
       },
     ],
-    model: "llama-3.1-70b-versatile",
+    model: "llama3-70B-8192",
   });
   return chatCompletion.choices[0]?.message?.content ?? "";
 }
@@ -31,14 +31,14 @@ async function generateDescription(
 }
 
 async function extractInfoFromTextWithGroq(text: string): Promise<{
-  dates: { 
-    date: string; 
-    description: string 
+  dates: {
+    date: string;
+    description: string;
   }[];
-  
-  monetary_values: { 
-    amount: string; 
-    description: string 
+
+  monetary_values: {
+    amount: string;
+    description: string;
   }[];
 
   citations: {
@@ -49,25 +49,22 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
   const extractionPrompt = `
   You are an AI assistant specialized in extracting specific information from Indonesian legal and financial documents. Analyze the following text and extract:
 
-  1. Dates: Include only this date format:[day] [month] [year], if you find a singular year on the document, ignore it.
+  1. Dates: Include only dates in this format: [day] [month] [year] (example: 21 Januari 2021). Ignore single years.
   2. Monetary values: Find monetary amounts, especially in Indonesian Rupiah (IDR/Rp). Include amounts written in words.
-  3. Citation references: Extract any references to laws, regulations, or legal documents. You can find this in "mengingat" sections.
+  3. Citation references: Extract any references to laws, regulations, or legal documents. These are often found in "mengingat" sections.
 
-  Be thorough and extract all instances you can find, use Bahasa Indonesia for the [context explanation].
-  Provide the information directly without any prefixes or unnecessary text.
-
+  Be thorough and extract all instances you can find. Use Bahasa Indonesia for the context explanations.
+  
   Text to analyze:
   ${text}
-
+  
   Format your response as follows:
-  Dates:
-  - [extracted date] - [context explanation]
-  Monetary values:
-  - [extracted amount] - [context explanation]
-  Citations:
-  - [extracted citation] - [context explanation]
+  
+  Dates: [extracted date] - [context explanation]
+  Monetary values: [extracted amount] - [context explanation]
+  Citations: [extracted citation] - [context explanation]
 
-  If no information is found for a category, simply state "No information found" for that category and do the same for the description.
+  If no information is found for a category, state "No information found" for that category.
 `;
 
   console.log("Sending extraction prompt to Groq API");
@@ -76,14 +73,14 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
   console.log("Groq response:", groqResponse);
 
   // Parse the text response
-  const dates: { 
-    date: string; 
-    description: string 
+  const dates: {
+    date: string;
+    description: string;
   }[] = [];
-  
-  const monetary_values: { 
-    amount: string; 
-    description: string 
+
+  const monetary_values: {
+    amount: string;
+    description: string;
   }[] = [];
 
   const citations: {
@@ -122,7 +119,7 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
           break;
         case "citation":
           const lawTitleMatch = RegExp(/^(.+?\s\d{4})/).exec(content);
-          if(lawTitleMatch) {
+          if (lawTitleMatch) {
             citations.push({
               law_title: lawTitleMatch[1],
               description: await generateDescription(content, "citation"),
@@ -144,14 +141,14 @@ export async function extractAndGenerateInsights(docTexts: {
   [key: string]: string;
 }): Promise<{
   [key: string]: {
-    dates: { 
-      date: string; 
-      description: string 
+    dates: {
+      date: string;
+      description: string;
     }[];
-    
-    monetary_values: { 
-      amount: string; 
-      description: string 
+
+    monetary_values: {
+      amount: string;
+      description: string;
     }[];
 
     citations: {
@@ -162,14 +159,14 @@ export async function extractAndGenerateInsights(docTexts: {
 }> {
   const extractedData: {
     [key: string]: {
-      dates: { 
-        date: string; 
-        description: string 
+      dates: {
+        date: string;
+        description: string;
       }[];
-      
-      monetary_values: { 
-        amount: string; 
-        description: string 
+
+      monetary_values: {
+        amount: string;
+        description: string;
       }[];
 
       citations: {
