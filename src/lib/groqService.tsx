@@ -10,7 +10,7 @@ async function getGroqChatCompletion(content: string): Promise<string> {
         content,
       },
     ],
-    model: "llama3-70B-8192",
+    model: "llama3-8B-8192",
   });
   return chatCompletion.choices[0]?.message?.content ?? "";
 }
@@ -45,6 +45,8 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
     law_title: string;
     description: string;
   }[];
+
+  wordcloud: string[];
 }> {
   const extractionPrompt = `
   You are an AI assistant specialized in extracting specific information from Indonesian legal and financial documents. Analyze the following text and extract:
@@ -52,6 +54,7 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
   1. Dates: Include only dates in this format: [day] [month] [year] (example: 21 Januari 2021). Ignore single years.
   2. Monetary values: Find monetary amounts, especially in Indonesian Rupiah (IDR/Rp). Include amounts written in words.
   3. Citation references: Extract any references to laws, regulations, or legal documents. These are often found in "mengingat" sections.
+  4. Wordcloud: Identify 10 key phrases or terms that are most relevant and important to the document's content.
 
   Be thorough and extract all instances you can find. Use Bahasa Indonesia for the context explanations.
   
@@ -60,9 +63,14 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
   
   Format your response as follows:
   
-  Dates: [extracted date] - [context explanation]
-  Monetary values: [extracted amount] - [context explanation]
-  Citations: [extracted citation] - [context explanation]
+  **Dates:**
+  * [extracted date] - [context explanation]
+  **Monetary values:**
+  * [extracted amount] - [context explanation]
+  **Citations:**
+  * [extracted citation] - [context explanation]
+  **Wordcloud:**
+  [list of 10 key phrases or terms, separated by commas]
 
   If no information is found for a category, state "No information found" for that category.
 `;
@@ -72,69 +80,54 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
   console.log("Received response from Groq API");
   console.log("Groq response:", groqResponse);
 
-  // Parse the text response
-  const dates: {
-    date: string;
-    description: string;
-  }[] = [];
-
-  const monetary_values: {
-    amount: string;
-    description: string;
-  }[] = [];
-
-  const citations: {
-    law_title: string;
-    description: string;
-  }[] = [];
+  const dates: { date: string; description: string }[] = [];
+  const monetary_values: { amount: string; description: string }[] = [];
+  const citations: { law_title: string; description: string }[] = [];
+  let wordcloud: string[] = [];
 
   const lines = groqResponse.split("\n");
   let currentSection = "";
 
   console.log("Parsing Groq API response");
   for (const line of lines) {
-    if (line.toLowerCase().includes("dates:")) {
+    if (line.startsWith("**Dates:**")) {
       currentSection = "dates";
-    } else if (line.toLowerCase().includes("monetary values:")) {
+    } else if (line.startsWith("**Monetary values:**")) {
       currentSection = "monetary_values";
-    } else if (line.toLowerCase().includes("citations:")) {
-      currentSection = "citation";
-    } else if (line.trim().startsWith("-")) {
+    } else if (line.startsWith("**Citations:**")) {
+      currentSection = "citations";
+    } else if (line.startsWith("**Wordcloud:**")) {
+      currentSection = "wordcloud";
+    } else if (line.trim().startsWith("*")) {
       const content = line.trim().substring(1).trim();
       switch (currentSection) {
         case "dates":
-          const dateMatch = RegExp(/(\d{1,2}\s\w+\s\d{4})/).exec(content);
-          if (dateMatch) {
-            dates.push({
-              date: dateMatch[1],
-              description: await generateDescription(content, "date"),
-            });
-          }
+          const [date, dateDescription] = content.split(" - ");
+          dates.push({ date, description: await generateDescription(content, "date") });
           break;
         case "monetary_values":
-          monetary_values.push({
-            amount: content,
-            description: await generateDescription(content, "monetary value"),
-          });
-          break;
-        case "citation":
-          const lawTitleMatch = RegExp(/^(.+?\s\d{4})/).exec(content);
-          if (lawTitleMatch) {
-            citations.push({
-              law_title: lawTitleMatch[1],
-              description: await generateDescription(content, "citation"),
-            });
+          if (content !== "No monetary values extracted") {
+            const [amount, valueDescription] = content.split(" - ");
+            monetary_values.push({ amount, description: await generateDescription(content, "monetary value") });
           }
           break;
+        case "citations":
+          const [law_title, citationDescription] = content.split(" - ");
+          citations.push({ law_title, description: await generateDescription(content, "citation") });
+          break;
       }
+    } else if (currentSection === "wordcloud" && line.trim() !== "") {
+      wordcloud = line.trim().split(", ").map(term => term.trim());
+      currentSection = ""; // Reset currentSection after processing wordcloud
     }
   }
 
   console.log(
-    `Extracted: ${dates.length} dates, ${monetary_values.length} monetary values, ${citations.length} citations`
+    `Extracted: ${dates.length} dates, ${monetary_values.length} monetary values, ${citations.length} citations, ${wordcloud.length} wordcloud terms`
   );
+  console.log("Wordcloud terms:", wordcloud);
 
-  return { dates, monetary_values, citations };
+  return { dates, monetary_values, citations, wordcloud };
 }
 
 export async function extractAndGenerateInsights(docTexts: {
@@ -155,6 +148,8 @@ export async function extractAndGenerateInsights(docTexts: {
       law_title: string;
       description: string;
     }[];
+
+    wordcloud: string[];
   };
 }> {
   const extractedData: {
@@ -173,6 +168,8 @@ export async function extractAndGenerateInsights(docTexts: {
         law_title: string;
         description: string;
       }[];
+
+      wordcloud: string[];
     };
   } = {};
 
@@ -190,6 +187,7 @@ export async function extractAndGenerateInsights(docTexts: {
         dates: [],
         monetary_values: [],
         citations: [],
+        wordcloud: [],
       };
     }
   }

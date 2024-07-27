@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import styles from '../styles/Dashboard.module.css';
+import Wordcloud from '../components/wordcloud';
 
 interface ExtractedData {
   dates: { date: string; description: string }[];
   monetary_values: { amount: string; description: string }[];
   citations: { law_title: string; description: string }[];
+  wordcloud: string[];
 }
 
 interface CombinedResults {
@@ -84,6 +86,17 @@ const DataDisplay = () => {
       {activeTab && (
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>{activeTab}</h2>
+
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Wordcloud</h3>
+            {data[activeTab].wordcloud && data[activeTab].wordcloud.length > 0 ? (
+              <div className={styles.wordcloudWrapper}>
+                <Wordcloud words={data[activeTab].wordcloud} />
+              </div>
+            ) : (
+              <p className={styles.noDataMessage}>No wordcloud data available</p>
+            )}
+          </div>
 
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Dates</h3>
