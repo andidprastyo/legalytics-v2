@@ -102,17 +102,17 @@ async function extractInfoFromTextWithGroq(text: string): Promise<{
       const content = line.trim().substring(1).trim();
       switch (currentSection) {
         case "dates":
-          const [date, dateDescription] = content.split(" - ");
+          const [date] = content.split(" - ");
           dates.push({ date, description: await generateDescription(content, "date") });
           break;
         case "monetary_values":
           if (content !== "No monetary values extracted") {
-            const [amount, valueDescription] = content.split(" - ");
+            const [amount] = content.split(" - ");
             monetary_values.push({ amount, description: await generateDescription(content, "monetary value") });
           }
           break;
         case "citations":
-          const [law_title, citationDescription] = content.split(" - ");
+          const [law_title] = content.split(" - ");
           citations.push({ law_title, description: await generateDescription(content, "citation") });
           break;
       }
@@ -193,4 +193,14 @@ export async function extractAndGenerateInsights(docTexts: {
   }
 
   return extractedData;
+}
+
+export async function extractInsightsFromText(text: string): Promise<{
+  dates: { date: string; description: string }[];
+  monetary_values: { amount: string; description: string }[];
+  citations: { law_title: string; description: string }[];
+  wordcloud: string[];
+}> {
+  const result = await extractAndGenerateInsights({ "text": text });
+  return result["text"];
 }
