@@ -1,4 +1,4 @@
-import { MongoClient, Db } from 'mongodb';
+import { MongoClient, Db, ObjectId } from 'mongodb';
 
 let cachedDb: Db | null = null;
 
@@ -24,17 +24,6 @@ async function connectToDatabase(): Promise<Db> {
   return db;
 }
 
-export async function findDocumentByFilename(filename: string) {
-  const db = await connectToDatabase();
-  const collectionName = process.env.MONGODB_COLLECTION_NAME;
-
-  if (!collectionName) {
-    throw new Error('Please define the MONGODB_COLLECTION_NAME environment variable');
-  }
-
-  return db.collection(collectionName).findOne({ filename });
-}
-
 export async function getAllDocuments() {
   const db = await connectToDatabase();
   const collectionName = process.env.MONGODB_COLLECTION_NAME;
@@ -55,8 +44,35 @@ export async function updateDocumentWithExtractedData(id: string, extractedData:
   }
 
   return db.collection(collectionName).updateOne(
-    { id },
+    { _id: new ObjectId(id) },
     { $set: { extractedData } }
+  );
+}
+
+export async function findDocumentById(id: string) {
+  const db = await connectToDatabase();
+  const collectionName = process.env.MONGODB_COLLECTION_NAME;
+
+  if (!collectionName) {
+    throw new Error('Please define the MONGODB_COLLECTION_NAME environment variable');
+  }
+
+  // Search by the 'id' field instead of '_id'
+  return db.collection(collectionName).findOne({ id: id });
+}
+
+export async function saveExtractedData(id: string, extractedData: any) {
+  const db = await connectToDatabase();
+  const extractedDataCollectionName = process.env.MONGODB_EXTRACTED_DATA_COLLECTION_NAME;
+
+  if (!extractedDataCollectionName) {
+    throw new Error('Please define the MONGODB_EXTRACTED_DATA_COLLECTION_NAME environment variable');
+  }
+
+  return db.collection(extractedDataCollectionName).updateOne(
+    { originalDocumentId: id },
+    { $set: extractedData },
+    { upsert: true }
   );
 }
 
@@ -69,7 +85,7 @@ export async function updateDocumentWithInsights(id: string, insights: any) {
   }
 
   return db.collection(collectionName).updateOne(
-    { id },
+    { _id: new ObjectId(id) },
     { $set: { insights } }
   );
 }

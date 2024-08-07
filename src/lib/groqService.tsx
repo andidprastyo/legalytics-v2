@@ -201,6 +201,6 @@ export async function extractInsightsFromText(text: string): Promise<{
   citations: { law_title: string; description: string }[];
   wordcloud: string[];
 }> {
-  const result = await extractAndGenerateInsights({ "text": text });
-  return result["text"];
+  const extractedInfo = await extractInfoFromTextWithGroq(text);
+  return extractedInfo;
 }

@@ -1,28 +1,25 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { findDocumentByFilename, getAllDocuments } from '../../lib/dbService';
+import { findDocumentById } from '../../lib/dbService';
 import { processDocumentContent } from '../../lib/dataProcessingService';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { filename } = req.query;
+    const { id } = req.query;
 
-    if (filename) {
-      const document = await findDocumentByFilename(filename as string);
-      if (document) {
-        const processedDocument = await processDocumentContent(document);
-        res.status(200).json({ [filename.toString()]: processedDocument });
-      } else {
-        res.status(404).json({ error: "Document not found" });
-      }
+    if (!id || typeof id !== 'string') {
+      return res.status(400).json({ error: "Valid Document ID is required" });
+    }
+
+    console.log("Attempting to find document with ID:", id);
+    const document = await findDocumentById(id);
+    
+    if (document) {
+      console.log("Document found:", document);
+      const processedDocument = await processDocumentContent(document);
+      res.status(200).json(processedDocument);
     } else {
-      const documents = await getAllDocuments();
-      const processedDocuments = await Promise.all(
-        documents.map(async (doc) => {
-          const processedDoc = await processDocumentContent(doc);
-          return [doc.filename, processedDoc];
-        })
-      );
-      res.status(200).json(Object.fromEntries(processedDocuments));
+      console.log("No document found for ID:", id);
+      res.status(404).json({ error: "Document not found" });
     }
   } catch (error) {
     console.error('Error in API handler:', error);
