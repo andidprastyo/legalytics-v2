@@ -3,10 +3,10 @@ import styles from "../styles/Dashboard.module.css";
 import Wordcloud from "../components/wordcloud";
 
 interface ExtractedData {
-  dates: { date: string; description: string }[];
-  monetary_values: { amount: string; description: string }[];
-  citations: { law_title: string; description: string }[];
-  wordcloud: string[];
+  dates?: { date: string; description: string }[];
+  monetary_values?: { amount: string; description: string }[];
+  citations?: { law_title: string; description: string }[];
+  wordcloud?: string[];
 }
 
 const DataDisplay = () => {
@@ -112,7 +112,7 @@ const DataDisplay = () => {
 
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Dates</h3>
-            {data.dates.length > 0 ? (
+            {data.dates && data.dates.length > 0 ? (
               renderTable(data.dates, ["Date", "Description"])
             ) : (
               <p className={styles.noDataMessage}>No dates found</p>
@@ -121,7 +121,7 @@ const DataDisplay = () => {
 
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Monetary Values</h3>
-            {data.monetary_values.length > 0 ? (
+            {data.monetary_values && data.monetary_values.length > 0 ? (
               renderTable(data.monetary_values, ["Amount", "Description"])
             ) : (
               <p className={styles.noDataMessage}>No monetary values found</p>
@@ -130,7 +130,7 @@ const DataDisplay = () => {
 
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Citations</h3>
-            {data.citations.length > 0 ? (
+            {data.citations && data.citations.length > 0 ? (
               renderTable(data.citations, ["Law Title", "Description"])
             ) : (
               <p className={styles.noDataMessage}>No citations found</p>
